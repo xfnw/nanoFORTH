@@ -34,12 +34,13 @@ PROGMEM const char CMD[] = "\x07" \
 PROGMEM const char JMP[] = "\x0b" \
     ";  " "IF " "ELS" "THN" "BGN" "UTL" "WHL" "RPT" "FOR" "NXT" \
     "I  ";
-PROGMEM const char PRM[] = "\x32" \
+PROGMEM const char PRM[] = "\x38" \
     "DRP" "DUP" "SWP" "OVR" "ROT" "+  " "-  " "*  " "/  " "MOD" \
     "NEG" "AND" "OR " "XOR" "NOT" "=  " "<  " ">  " "<= " ">= " \
     "<> " "@  " "!  " "C@ " "C! " "KEY" "EMT" "CR " ".  " ".\" "\
     ">R " "R> " "WRD" "HRE" "CEL" "ALO" "SAV" "LD " "SEX" "TRC" \
-    "CLK" "D+ " "D- " "DNG" "DLY" "IN " "AIN" "OUT" "PWM" "PIN";
+    "CLK" "D+ " "D- " "DNG" "DLY" "IN " "AIN" "OUT" "PWM" "PIN" \
+    ".X " "<< " ">> " "<<8" ">>8" "-^ ";
 PROGMEM const char PMX[] = "\x4" \
     "FOR" "NXT" "BRK" "I  ";
 constexpr U16 OP_SEMI = 0;                           /**< semi-colon, end of function definition */

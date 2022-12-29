@@ -57,6 +57,7 @@ public:
     static void d_nib(U8 n);               ///< print a nibble
     static void d_u8(U8 c);                ///< print a 8-bit hex number
     static void d_num(S16 n);              ///< sent a number literal to console
+    static void d_hex(S16 n);              ///< print a 16bit hex number to console
     static void d_mem(                     ///< display memory block
         U8 *base,                          ///< reference memory pointer (start of dictionary)<br/>
         U8 *p0,                            ///< starting memory pointer<br/>

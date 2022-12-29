@@ -260,9 +260,14 @@ void N4VM::_primitive(U8 op)
     case 48: { U16 p=POP(); analogWrite(p, POP());  } break; // PWM
     case 49: { U16 p=POP(); pinMode(p, POP());      } break; // PIN
 #endif //ARDUINO
-    case 50: /* available ... */          break;
+    case 50: d_hex(POP()); d_chr(' ');    break; // .X
+    case 51: TOS = TOS << 1;              break; // <<
+    case 52: TOS = TOS >> 1;              break; // >>
+    case 53: TOS = TOS << 8;              break; // <<8
+    case 54: TOS = TOS >> 8;              break; // >>8
+    case 55: TOS = POP() - TOS;           break; // -^
     case 58: /* ... available */          break;
-        /* case 48-58 available for future expansion */
+        /* case 56-58 available for future expansion */
     case 59: RPUSH(POP()); RPUSH(POP());  break; // FOR
     case 60: {                                   // NXT
         (*(rp-2))++;               // counter+1
