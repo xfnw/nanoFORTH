@@ -82,10 +82,10 @@ U8 N4VM::step()
 #else
         case 6: exit(0);                break;   /// * BYE, bail to OS
 #endif // ARDUINO
-        }                                 break;
-    case TKN_DIC: _execute(tmp + 2 + 3);  break; ///>> execute word from dictionary (user defined),
-    case TKN_PRM: _primitive((U8)tmp);    break; ///>> execute primitive built-in word,
-    case TKN_NUM: PUSH(tmp);              break; ///>> push a number (literal) to stack top,
+        }                               break;
+    case TKN_WRD: _nest(tmp + 2 + 3);   break;   ///>> execute colon word (user defined)
+    case TKN_PRM: _invoke((U8)tmp);     break;   ///>> execute primitive built-in word,
+    case TKN_NUM: PUSH(tmp);            break;   ///>> push a number (literal) to stack top,
     default:                                     ///>> or, error (unknown action)
         show("?\n");
     }
@@ -106,7 +106,7 @@ void N4VM::_init() {
     U16 adr = n4asm->reset();            /// * reload EEPROM and reset assembler
     if (adr != LFA_X) {                  /// * check autorun addr has been setup? (see SEX)
         show("reset\n");
-        _execute(adr + 2 + 3);           /// * execute last saved word in EEPROM
+        _nest(adr + 2 + 3);              /// * execute last saved colon word in EEPROM
     }
 }
 ///
@@ -127,7 +127,7 @@ void N4VM::_ok()
 ///
 ///> opcode execution unit
 ///
-void N4VM::_execute(U16 adr)
+void N4VM::_nest(U16 adr)
 {
     RPUSH(LFA_X);                                         // enter function call
     for (U8 *pc=PTR(adr); pc!=PTR(LFA_X); ) {             ///> walk through instruction sequences
@@ -138,31 +138,31 @@ void N4VM::_execute(U16 adr)
 
         U8  op = ir & CTL_BITS;                           ///> determine control bits
         switch (op) {
-        case 0xc0:                                        ///> handle branching instruction
+        case JMP_OPS:                                     ///> handle branching instruction
             a = GET16(pc-1) & ADR_MASK;                   // target address
             switch (ir & JMP_MASK) {                      // get branch opcode
-            case PFX_CALL:                                // 0xc0 subroutine call
+            case OP_CALL:                                 // 0xc0 subroutine call
                 RPUSH(IDX(pc+1));                         // keep next instruction on return stack
                 pc = PTR(a);                              // jump to subroutine till I_RET
                 break;
-            case PFX_RET:                                 // 0xd0 return from subroutine
+            case OP_CDJ:                                  // 0xd0 conditional jump
+                pc = POP() ? pc+1 : PTR(a);               // next or target
+                break;
+            case OP_UDJ:                                  // 0xe0 unconditional jump
+                pc = PTR(a);                              // set jump target
+                break;
+            case OP_RET:                                  // 0xf0 return from subroutine
                 a  = RPOP();                              // pop return address
                 pc = PTR(a);                              // caller's next instruction (or break loop if 0xffff)
                 break;
-            case PFX_CDJ:                                 // 0xe0 conditional jump
-                pc = POP() ? pc+1 : PTR(a);               // next or target
-                break;
-            case PFX_UDJ:                                 // 0xf0 unconditional jump
-                pc = PTR(a);                              // set jump target
-                break;
             }
             break;
-        case 0x80:                                        ///> handle primitive word
+        case PRM_OPS:                                     ///> handle primitive word
             op = ir & PRM_MASK;                           // capture opcode
             switch(op) {
             case I_LIT: PUSH(GET16(pc)); pc+=2; break;    // 3-byte literal
             case I_DQ:  d_str(pc); pc+=*pc+1;   break;    // handle ." (len,byte,byte,...)
-            default: _primitive(op);                      // handle other opcodes
+            default: _invoke(op);                         // handle other opcodes
             }
             break;
         default: PUSH(ir);                                ///> handle number (1-byte literal)
@@ -171,10 +171,13 @@ void N4VM::_execute(U16 adr)
     }
 }
 ///
-///> execute a primitive opcode
+///> invoke a built-in opcode
 ///
-void N4VM::_primitive(U8 op)
+void N4VM::_invoke(U8 op)
 {
+#define HI16(u)    ((U16)((u)>>16))
+#define LO16(u)    ((U16)((u)&0xffff))
+#define TO32(u, v) (((S32)(u)<<16) | LO16(v))
     switch (op) {
     case 0:  POP();                       break; // DRP
     case 1:  PUSH(TOS);                   break; // DUP
@@ -226,31 +229,26 @@ void N4VM::_primitive(U8 op)
     case 38: n4asm->save(true);           break; // SEX - save/execute (autorun)
     case 39: set_trace(POP());            break; // TRC
     case 40: {                                   // CLK
-        U32 u = millis();       // millisecond
-        PUSH((U16)(u&0xffff));
-        PUSH((U16)(u>>16));
+        U32 u = millis();       // millisecond (32-bit value)
+        PUSH(LO16(u));
+        PUSH(HI16(u));
     }                                     break;
     case 41: {                                   // D+
-        S32 d0 = ((S32)TOS<<16)   | (SS(1)&0xffff);
-        S32 d1 = ((S32)SS(2)<<16) | (SS(3)&0xffff);
-        S32 v  = d1 + d0;
+        S32 v = TO32(SS(2), SS(3)) + TO32(TOS, SS(1));
         POP(); POP();
-        SS(1)  = (S16)(v&0xffff);
-        TOS    = (S16)(v>>16);
+        SS(1) = (S16)LO16(v);
+        TOS   = (S16)HI16(v);
     }                                     break;
     case 42: {                                   // D-
-        S32 d0 = ((S32)TOS<<16)   | (SS(1)&0xffff);
-        S32 d1 = ((S32)SS(2)<<16) | (SS(3)&0xffff);
-        S32 v  = d1 - d0;
+        S32 v = TO32(SS(2), SS(3)) - TO32(TOS, SS(1));
         POP(); POP();
-        SS(1)  = (S16)(v&0xffff);
-        TOS    = (S16)(v>>16);
+        SS(1) = (S16)LO16(v);
+        TOS   = (S16)HI16(v);
     }                                     break;
     case 43: {                                   // DNG
-        S32 d0 = ((S32)TOS<<16)   | (SS(1)&0xffff);
-        S32 v  = -d0;
-        SS(1)  = (S16)(v&0xffff);
-        TOS    = (S16)(v>>16);
+        S32 v = -TO32(TOS, SS(1));
+        SS(1) = (S16)LO16(v);
+        TOS   = (S16)HI16(v);
     }                                     break;
 #if ARDUINO
     case 44: NanoForth::wait((U32)POP());             break; // DLY
