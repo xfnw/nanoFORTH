@@ -266,7 +266,10 @@ void N4VM::_invoke(U8 op)
     case 54: TOS = TOS >> 8;              break; // >>8
     case 55: TOS = POP() - TOS;           break; // -^
     case 56: {if (TOS == -1) {
-                     lcd.clear(); POP();
+                     POP(); lcd.clear();
+                 } else if (TOS == -2) {
+                     POP();
+		     POP() ? lcd.autoscroll() : lcd.noAutoscroll();
                  } else
                      lcd.setCursor(POP(), POP());
 	     }                            break; // LSC
