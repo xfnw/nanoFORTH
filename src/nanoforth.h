@@ -28,6 +28,7 @@
 ///@{
 #if ARDUINO
 #include <Arduino.h>
+
 #define log(msg)          Serial.print(F(msg))
 #define logx(v)           Serial.print((U16)v, HEX)
 #else

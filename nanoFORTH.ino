@@ -16,6 +16,10 @@
  *  + in Serial Monitor input, type WRD and hit <return>
  */
 #include "./src/nanoforth.h"
+#include "./src/lcd.h"
+
+const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 NanoForth my_n4;                  ///< our NanoForth instance
 void setup() {
@@ -27,6 +31,8 @@ void setup() {
     //my_n4.add(lets_blink);        ///< add the blink task to NanoForth task manager
 
     pinMode(LED_BUILTIN, OUTPUT);
+    lcd.begin(16, 2);
+    lcd.print("nanoFORTH");
 }
 
 void loop() {

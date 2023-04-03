@@ -14,6 +14,7 @@
  */
 #include "nanoforth_asm.h"
 #include "nanoforth_vm.h"
+#include "lcd.h"
 ///
 ///@name Data Stack and Return Stack Ops
 ///@{
@@ -264,8 +265,13 @@ void N4VM::_invoke(U8 op)
     case 53: TOS = TOS << 8;              break; // <<8
     case 54: TOS = TOS >> 8;              break; // >>8
     case 55: TOS = POP() - TOS;           break; // -^
-    case 58: /* ... available */          break;
-        /* case 56-58 available for future expansion */
+    case 56: {if (TOS == -1) {
+                     lcd.clear(); POP();
+                 } else
+                     lcd.setCursor(POP(), POP());
+	     }                            break; // LSC
+    case 57: lcd.print(POP());            break; // .L
+    case 58: lcd.print((char)POP());      break; // EML
     case 59: RPUSH(POP()); RPUSH(POP());  break; // FOR
     case 60: {                                   // NXT
         (*(rp-2))++;               // counter+1
