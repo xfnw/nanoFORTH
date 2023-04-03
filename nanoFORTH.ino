@@ -25,14 +25,14 @@ NanoForth my_n4;                  ///< our NanoForth instance
 void setup() {
     Serial.begin(115200);         ///< init Serial IO, make sure it is set to 'Both BL & CR' to capture input
 
+    pinMode(LED_BUILTIN, OUTPUT);
+    lcd.begin(16, 2);
+    lcd.print("nanoFORTH");
+
     if (my_n4.begin()) {          ///< initialize NanoForth and default Serial Monitor as our output
         Serial.print(F("ERROR: memory allocation failed!"));
     }
     //my_n4.add(lets_blink);        ///< add the blink task to NanoForth task manager
-
-    pinMode(LED_BUILTIN, OUTPUT);
-    lcd.begin(16, 2);
-    lcd.print("nanoFORTH");
 }
 
 void loop() {
